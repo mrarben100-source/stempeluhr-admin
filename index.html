@@ -824,27 +824,29 @@ async function genLohnabrechnung() {
     y += 7;
 
     // ── Tabelle Header ──
-    const colX = [marginL, marginL + 85, marginL + 112, marginL + 140];
-    const colW  = [84, 26, 27, contentW - 140 + marginL];
+    // Spalten: Bezeichnung | Satz | Pro Stunde | Pro Monat
+    const satzX   = marginL + 95;   // rechts-bündig
+    const pstdX   = marginL + 130;  // rechts-bündig
+    const pmonX   = pageW - marginR; // rechts-bündig
 
-    doc.setFillColor(240, 240, 240);
+    doc.setFillColor(235, 238, 248);
     doc.rect(marginL, y - 5, contentW, 7, 'F');
     doc.setFont('helvetica','bold');
     doc.setFontSize(8.5);
-    doc.text('Bezeichnung',       colX[0],     y, { align: 'left' });
-    doc.text('Satz',              colX[1] + 13, y, { align: 'right' });
-    doc.text('Pro Stunde',        colX[2] + 13, y, { align: 'right' });
-    doc.text('Pro Monat',         pageW - marginR, y, { align: 'right' });
+    doc.text('Bezeichnung',  marginL,  y, { align: 'left' });
+    doc.text('Satz',         satzX,    y, { align: 'right' });
+    doc.text('Pro Stunde',   pstdX,    y, { align: 'right' });
+    doc.text('Pro Monat',    pmonX,    y, { align: 'right' });
     y += 7;
 
     // ── Tabellen-Hilfsfunktion ──
     function tableRow(bezeichnung, satzStr, proStundeStr, proMonatStr, bold = false) {
       doc.setFont('helvetica', bold ? 'bold' : 'normal');
       doc.setFontSize(8.5);
-      doc.text(bezeichnung,  colX[0],              y, { align: 'left' });
-      doc.text(satzStr,      colX[1] + 13,          y, { align: 'right' });
-      doc.text(proStundeStr, colX[2] + 13,          y, { align: 'right' });
-      doc.text(proMonatStr,  pageW - marginR,        y, { align: 'right' });
+      doc.text(bezeichnung,   marginL, y, { align: 'left' });
+      doc.text(satzStr,       satzX,   y, { align: 'right' });
+      doc.text(proStundeStr,  pstdX,   y, { align: 'right' });
+      doc.text(proMonatStr,   pmonX,   y, { align: 'right' });
       y += 5.5;
     }
 
@@ -859,19 +861,16 @@ async function genLohnabrechnung() {
       'CHF ' + chf(STUNDENLOHN) + '/h',
       'CHF ' + chf(STUNDENLOHN),
       'CHF ' + chf(arbeitslohn));
-    tableDivider(true);
 
     tableRow(`Ferienentschädigung ${pct(FERIEN_PCT * 100)}`,
       pct(FERIEN_PCT * 100),
       'CHF ' + chf(STUNDENLOHN * FERIEN_PCT),
       'CHF ' + chf(ferienentsch));
-    tableDivider(true);
 
     tableRow(`Feiertagsentschädigung ${pct(FEIERTAG_PCT * 100)}`,
       pct(FEIERTAG_PCT * 100),
       'CHF ' + chf(STUNDENLOHN * FEIERTAG_PCT),
       'CHF ' + chf(feiertagentsch));
-    tableDivider(true);
 
     tableRow(`13. Monatslohn ${pct(DM_PCT * 100)} (auf Arb.+Ferien+Feiertag)`,
       pct(DM_PCT * 100),
@@ -891,24 +890,21 @@ async function genLohnabrechnung() {
     // ── Abzüge ──
     doc.setFont('helvetica','bold');
     doc.setFontSize(8);
-    doc.text('Abzüge Arbeitnehmer', colX[0], y);
+    doc.text('Abzüge Arbeitnehmer', marginL, y);
     y += 5;
 
     tableRow(`AHV/IV/EO ${pct(AHV_PCT * 100)}`,
-      pct(AHV_PCT * 100), '', '− CHF ' + chf(ahvAbzug));
-    tableDivider(true);
+      pct(AHV_PCT * 100), '', '-CHF ' + chf(ahvAbzug));
 
     tableRow(`ALV ${pct(ALV_PCT * 100)}`,
-      pct(ALV_PCT * 100), '', '− CHF ' + chf(alvAbzug));
-    tableDivider(true);
+      pct(ALV_PCT * 100), '', '-CHF ' + chf(alvAbzug));
 
     tableRow(`KTG ${pct(KTG_PCT * 100)}`,
-      pct(KTG_PCT * 100), '', '− CHF ' + chf(ktgAbzug));
+      pct(KTG_PCT * 100), '', '-CHF ' + chf(ktgAbzug));
 
     if (istBausweis && qstSatz > 0) {
-      tableDivider(true);
       tableRow(`Quellensteuer Tarif A0N (${pct(qstSatz)})`,
-        pct(qstSatz), '', '− CHF ' + chf(qstAbzug));
+        pct(qstSatz), '', '-CHF ' + chf(qstAbzug));
     }
 
     tableDivider(false);
@@ -916,7 +912,7 @@ async function genLohnabrechnung() {
     // Total Abzüge
     doc.setFillColor(248, 248, 248);
     doc.rect(marginL, y - 4.5, contentW, 6.5, 'F');
-    tableRow('Total Abzüge', '', '', '− CHF ' + chf(totalAbzuege), true);
+    tableRow('Total Abzüge', '', '', '-CHF ' + chf(totalAbzuege), true);
 
     y += 3;
     doc.setDrawColor(80, 80, 80);
@@ -929,19 +925,25 @@ async function genLohnabrechnung() {
     doc.rect(marginL, y - 4.5, contentW, 8, 'F');
     doc.setFont('helvetica','bold');
     doc.setFontSize(10);
-    doc.text('Nettolohn',        colX[0], y);
+    doc.text('Nettolohn',        marginL, y);
     doc.text('CHF ' + chf(nettolohn), pageW - marginR, y, { align: 'right' });
     y += 10;
 
     // ── Stunden-Übersicht ──
-    y += 3;
+    y += 6;
+    doc.setDrawColor(200,200,200);
+    doc.setLineWidth(0.3);
+    doc.line(marginL, y, pageW - marginR, y);
+    y += 5;
     doc.setFont('helvetica','bold');
-    doc.setFontSize(8);
+    doc.setFontSize(8.5);
     doc.text('Stunden-Übersicht', marginL, y);
     y += 5;
     doc.setFont('helvetica','normal');
-    doc.setFontSize(8);
-    doc.text(`Gearbeitete Netto-Stunden: ${hStr(totalNettoH)}`, marginL, y);
+    doc.setFontSize(8.5);
+    doc.text('Gearbeitete Netto-Stunden', marginL, y);
+    doc.setFont('helvetica','bold');
+    doc.text(hStr(totalNettoH), pmonX, y, { align: 'right' });
     y += 5;
 
     // ── Footer ──
