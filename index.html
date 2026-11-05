@@ -701,7 +701,8 @@ async function genLohnabrechnung() {
     // 2) Stunden dieses Monats laden
     const moStr = String(monat).padStart(2,'0');
     const datumFrom = `${jahr}-${moStr}-01`;
-    const datumTo   = `${jahr}-${moStr}-31`;
+    const lastDay   = new Date(jahr, monat, 0).getDate();
+    const datumTo   = `${jahr}-${moStr}-${String(lastDay).padStart(2,'0')}`;
     const stunden = await supaFetch(`/rest/v1/stamps?name=ilike.${encodeURIComponent(ma.vorname||'')}&datum=gte.${datumFrom}&datum=lte.${datumTo}&select=*`);
 
     // 3) Netto-Stunden berechnen
