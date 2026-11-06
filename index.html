@@ -722,7 +722,10 @@ async function genLohnabrechnung() {
     }
 
     // 4) Lohnberechnung (L-GAV)
-    const STUNDENLOHN   = 20.62;   // Arbeitslohn pro Stunde
+    // Stundenlohn je nach MA (Alicia & Tuana = 20.44, alle anderen = 18.77)
+    const MA_PREMIUM = ['alicia','tuana'];
+    const istPremium = MA_PREMIUM.includes((ma.vorname||'').toLowerCase().trim());
+    const STUNDENLOHN = istPremium ? 20.44 : 18.77;
     const FERIEN_PCT    = 10.65 / 100;
     const FEIERTAG_PCT  = 2.27  / 100;
     const DM_PCT        = 8.33  / 100;  // 13. Monatslohn
