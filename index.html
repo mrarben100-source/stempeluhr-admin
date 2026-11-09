@@ -545,13 +545,25 @@ async function loadAll(){
 
 function renderAll(){ renderStats(); renderActive(); renderToday(); renderLog(); fillManMA(); }
 
-function fillManMA(){
+async function fillManMA(){
   const sel=document.getElementById('manMA');
   if(!sel) return;
-  // Rebuild always so new names appear
   while(sel.options.length>1) sel.remove(1);
-  const namen=[...new Set(allData.map(r=>r.name))].sort();
-  namen.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=displayName(n);sel.appendChild(o);});
+  try{
+    const mas=await supaFetch('/rest/v1/mitarbeiter?select=vorname,nachname&order=vorname');
+    mas.forEach(m=>{
+      const val=(m.vorname||'').toLowerCase().trim();
+      const label=`${m.vorname||''} ${m.nachname||''}`.trim();
+      const o=document.createElement('option');
+      o.value=val;
+      o.textContent=label;
+      sel.appendChild(o);
+    });
+  }catch(e){
+    // fallback: aus allData
+    const namen=[...new Set(allData.map(r=>r.name))].sort();
+    namen.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=displayName(n);sel.appendChild(o);});
+  }
 }
 
 function renderStats(){
