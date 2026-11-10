@@ -1044,7 +1044,8 @@ async function genLohnabrechnung() {
     doc.setFont('helvetica','normal');
     doc.setFontSize(7.5);
     doc.setTextColor(140,140,140);
-    doc.text(`Erstellt am ${new Date().toLocaleDateString('de-CH')} | Le Portier 35 / PrimeVibes GmbH, Aarbergergasse 35, 3011 Bern`,
+    const zahlDatum = new Date(jahr, monat, 1).toLocaleDateString('de-CH');
+    doc.text(`Zahltag ${zahlDatum} | Le Portier 35 / PrimeVibes GmbH, Aarbergergasse 35, 3011 Bern`,
       pageW / 2, 290, { align: 'center' });
 
     // 6) Speichern
