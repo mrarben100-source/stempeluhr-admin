@@ -9,6 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
   :root{
     --bg:#f0f4ff; --card:#fff; --surface:#f7f9ff;
@@ -132,12 +133,34 @@
     .view{padding:1rem .9rem;}
     .stat-val{font-size:1.5rem;}
   }
+  /* Login */
+  #loginGate{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:1rem;}
+  #loginGate.hidden{display:none;}
+  #loginGate form{background:var(--card);border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.08);padding:1.6rem;width:100%;max-width:360px;display:flex;flex-direction:column;gap:.7rem;}
+  #loginGate h2{font-weight:900;color:var(--accent);font-size:1.2rem;margin:0;}
+  #loginGate input{width:100%;padding:.8rem;border:2px solid var(--border);border-radius:10px;font-family:var(--font);font-size:1rem;}
+  #loginGate button{padding:.85rem;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:var(--font);font-weight:900;font-size:.95rem;cursor:pointer;}
+  #loginGate button:disabled{opacity:.6;}
+  #loginErr{color:#ef4444;font-size:.85rem;font-weight:700;min-height:1em;}
+  .nav-logout{margin-left:auto;background:transparent;border:1.5px solid var(--border);border-radius:8px;padding:.35rem .7rem;font-family:var(--font);font-weight:800;font-size:.75rem;cursor:pointer;color:var(--muted);}
 </style>
 </head>
 <body>
 
+<div id="loginGate">
+  <form id="loginForm" autocomplete="on">
+    <h2>⏱ Le Portier Admin</h2>
+    <p style="color:var(--muted);font-size:.85rem;margin:0;">Bitte anmelden</p>
+    <input type="email" id="loginEmail" placeholder="E-Mail" autocomplete="username" required>
+    <input type="password" id="loginPass" placeholder="Passwort" autocomplete="current-password" required>
+    <div id="loginErr"></div>
+    <button type="submit" id="loginBtn">Anmelden</button>
+  </form>
+</div>
+
 <nav class="navbar">
   <div class="nav-logo">⏱ Le Portier Admin</div>
+  <button class="nav-logout" onclick="doLogout()">Abmelden</button>
 </nav>
 
 <div class="bottom-nav">
@@ -487,8 +510,37 @@ function toast(msg,type='ok'){
   setTimeout(()=>t.classList.remove('show'),2600);
 }
 
+// ── LOGIN (Supabase Auth) ──────────────────────────────────────
+const sbAuth = supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+let appStarted = false;
+
+async function authToken(){
+  const { data:{ session } } = await sbAuth.auth.getSession();
+  if(!session){ showLogin(); throw new Error('Nicht angemeldet'); }
+  return session.access_token;
+}
+function showLogin(){ document.getElementById('loginGate').classList.remove('hidden'); }
+async function doLogout(){ await sbAuth.auth.signOut(); location.reload(); }
+
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn=document.getElementById('loginBtn'), err=document.getElementById('loginErr');
+  btn.disabled=true; err.textContent='';
+  const { error } = await sbAuth.auth.signInWithPassword({
+    email: document.getElementById('loginEmail').value.trim(),
+    password: document.getElementById('loginPass').value
+  });
+  btn.disabled=false;
+  if(error){ err.textContent='E-Mail oder Passwort falsch.'; return; }
+  document.getElementById('loginPass').value='';
+  startApp();
+});
+
+sbAuth.auth.onAuthStateChange((ev, session) => { if(ev==='SIGNED_OUT' || !session) showLogin(); });
+
 async function supaFetch(path,method='GET',body=null){
-  const opts={method,headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'}};
+  const tok=await authToken();
+  const opts={method,headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+tok,'Content-Type':'application/json','Prefer':'return=representation'}};
   if(body) opts.body=JSON.stringify(body);
   const res=await fetch(SUPA_URL+path,opts);
   if(!res.ok) throw new Error(await res.text());
@@ -1915,10 +1967,16 @@ async function toggleConfirm(schichtId, maId, isCurrentlyConfirmed) {
 }
 // ── END ARBEITSPLAN ─────────────────────────────────────────────
 
-initReportControls();
-checkKorrBadge();
-setInterval(loadAll,30000);
-loadAll();
+function startApp(){
+  document.getElementById('loginGate').classList.add('hidden');
+  if(appStarted){ loadAll(); return; }
+  appStarted=true;
+  initReportControls();
+  checkKorrBadge();
+  setInterval(loadAll,30000);
+  loadAll();
+}
+sbAuth.auth.getSession().then(({ data:{ session } }) => session ? startApp() : showLogin());
 </script>
 </body>
 </html>
